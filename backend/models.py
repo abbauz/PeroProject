@@ -35,6 +35,7 @@ class ProductCategory(models.Model):
     category_name_ru = models.CharField(verbose_name="Category name Ru", max_length=300, blank=True, null=True)
     category_name_uz = models.CharField(verbose_name="Category name Uz", max_length=300, blank=True, null=True)
     category_photo = models.CharField(max_length=1000, verbose_name="Category photo", blank=True, null=True)
+    image = models.ImageField(null=True, verbose_name="Category Image")
 
     def __str__(self):
         return self.category_name
@@ -54,18 +55,22 @@ class Product(models.Model):
     description_ru = models.TextField(verbose_name="Description Ru", blank=True, null=True)
     description_en = models.TextField(verbose_name="Description En", blank=True, null=True)
     description_uz = models.TextField(verbose_name="Description Uz", blank=True, null=True)
-    photo = models.CharField(max_length=1000, verbose_name="Photo")
+    photo = models.CharField(max_length=1000, verbose_name="Photo", null=True, blank=True)
+    image = models.ImageField(null=True, verbose_name="Image")
 
     category_name = models.ForeignKey(ProductCategory, verbose_name="Category En", on_delete=models.CASCADE)
     category_name_ru = models.CharField(max_length=300, verbose_name="Category Ru", blank=True, null=True)
     category_name_uz = models.CharField(max_length=300, verbose_name="Category Ru", blank=True, null=True)
     category_code = models.CharField(verbose_name="Unnecassary category-code", max_length=300, blank=True)
 
+    def __str__(self):
+        return f"{self.name}"
+
 
 class ProductAksiya(models.Model):
     class Meta:
         verbose_name = "Product Aktsiya"
-        verbose_name_plural = "3.Products Aktsiya"
+        verbose_name_plural = "4.Products Aktsiya"
 
     id = models.AutoField(primary_key=True)
     name = models.CharField(verbose_name="Product name En", max_length=200)
@@ -77,6 +82,7 @@ class ProductAksiya(models.Model):
     description_en = models.TextField(verbose_name="Description En", blank=True, null=True)
     description_uz = models.TextField(verbose_name="Description Uz", blank=True, null=True)
     photo = models.CharField(max_length=1000, verbose_name="Photo")
+    image = models.ImageField(null=True, verbose_name="Image")
     begin_aksiya = models.IntegerField(default=0, verbose_name="Begin akysiya")
     count_a = models.IntegerField(default=0, verbose_name="Count akysiya")
 
@@ -92,12 +98,11 @@ class ProductAksiya(models.Model):
 class CartModel(models.Model):
     class Meta:
         verbose_name = "Cart"
-        verbose_name_plural = "4.Carts"
+        verbose_name_plural = "5.Carts"
 
     id = models.AutoField(primary_key=True)
     user = models.ForeignKey(User, verbose_name="User", on_delete=models.CASCADE)
-    product = models.ForeignKey(Product, verbose_name="Product", on_delete=models.CASCADE, null=True)
-    productA = models.ForeignKey(ProductAksiya, verbose_name="Product", on_delete=models.CASCADE, null=True)
+    product = models.ForeignKey(Product, verbose_name="Product", on_delete=models.CASCADE)
     amount = models.BigIntegerField(verbose_name="Amount")
     total = models.BigIntegerField(verbose_name="Total")
     is_success = models.BooleanField(verbose_name="Purchased ?", blank=True, null=True)
@@ -109,13 +114,13 @@ class CartModel(models.Model):
 class Order(models.Model):
     class Meta:
         verbose_name = "Order"
-        verbose_name_plural = "5.Orders"
+        verbose_name_plural = "6.Orders"
 
     id = models.AutoField(primary_key=True)
     user = models.ForeignKey(User, verbose_name="User", on_delete=models.CASCADE)
     name = models.CharField(max_length=400, verbose_name="Name")
     phone = models.CharField(max_length=400, verbose_name="Phone", blank=True, null=True)
-    address = models.CharField(max_length=4000, verbose_name="Address company")
+    address = models.CharField(max_length=400, verbose_name="Address company")
     purchases = models.TextField(verbose_name="Purchases")
     total = models.BigIntegerField(verbose_name="Total")
     is_success = models.BooleanField(verbose_name="Delivered ?", blank=True, null=True, default=False)
@@ -128,7 +133,7 @@ class Order(models.Model):
 class Location(models.Model):
     class Meta:
         verbose_name = "Location"
-        verbose_name_plural = "6.Locations"
+        verbose_name_plural = "7.Locations"
 
     id = models.AutoField(primary_key=True)
     user_id = models.CharField(max_length=400, verbose_name="User id", null=True)
@@ -140,7 +145,7 @@ class Location(models.Model):
 class Cashback(models.Model):
     class Meta:
         verbose_name = "Cashback"
-        verbose_name_plural = "7.Cashbacks"
+        verbose_name_plural = "8.Cashbacks"
 
     id = models.AutoField(primary_key=True)
     user_id = models.CharField(max_length=400, verbose_name="User id", null=True)
@@ -161,5 +166,4 @@ def category_pre_save_receiver(sender, instance, *args, **kwargs):
 
 
 pre_save.connect(category_pre_save_receiver, sender=Product)
-
 pre_save.connect(category_pre_save_receiver, sender=ProductAksiya)

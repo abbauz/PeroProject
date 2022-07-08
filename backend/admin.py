@@ -7,9 +7,9 @@ admin.site.unregister(Group)
 
 class ProductAdmin(admin.ModelAdmin):
     fieldsets = [
-        ("Product",
-         {'fields': ["name_uz", "name", "name_ru", "price", "description_uz", "description_ru", "description_en",
-                     "photo", 'image']}),
+        ("Product", {'fields': ["name_uz", "name", "name_ru", "price", "description_uz", "description_ru",
+                                "description_en",
+                                "photo", "image"]}),
         ("Category/SubCategory", {"fields": ["category_name"]}),
     ]
     list_display = ("name_uz", "price")
@@ -79,3 +79,5 @@ class CashbackAdmin(admin.ModelAdmin):
 
 
 admin.site.register(Cashback, CashbackAdmin)
+
+
