@@ -1,0 +1,131 @@
+from typing import Union
+from aiogram import types
+from aiogram.dispatcher import FSMContext
+from aiogram.types import CallbackQuery, Message
+from keyboards.inline.aksiya_button import menu_cd, categories_keyboard, items_keyboard, item_keyboard
+from loader import dp, _
+from utils.db_api.database import get_aksiya_item, get_category_by_name, get_user, get_lang, get_category_by_id
+
+
+@dp.callback_query_handler(text="aksiya", state='*')
+async def show_menu(call: types.CallbackQuery, state: FSMContext):
+    await call.answer()
+    await state.set_state('aksiya')
+    await list_aksiya_categories(call.message)
+
+
+@dp.callback_query_handler(text="aksiya", state='aksiya')
+async def show_menu(call: types.CallbackQuery, state: FSMContext):
+    await call.answer()
+    await state.finish()
+    await list_aksiya_categories(call.message)
+
+
+async def list_aksiya_categories(message: Union[CallbackQuery, Message], **kwargs):
+    if isinstance(message, Message):
+        user_id = message.chat.id
+        lang = await get_lang(user_id)
+        text = ''
+        if lang == 'uz':
+            text = 'Kategoriyalardan birini tanlang👇'
+        elif lang == 'en':
+            text = 'Select one of the categories👇'
+        elif lang == 'ru':
+            text = 'Выберите одну из категорий👇'
+        markup = await categories_keyboard(lang=await get_lang(user_id))
+        await message.edit_text(_(f"{text}"), reply_markup=markup)
+    elif isinstance(message, CallbackQuery):
+        call = message
+        markup = await categories_keyboard(lang=await get_lang(call.from_user.id))
+        await call.message.edit_reply_markup(markup)
+
+
+async def list_aksiya_subcategories(callback: CallbackQuery, category, **kwargs):
+    await callback.answer()
+    data = callback.data.split(':')
+    await callback.message.delete()
+    lang = await get_lang(callback.from_user.id)
+    text = ''
+    if lang == 'uz':
+        text = 'Mahsulotlardan birini tanlang👇'
+    elif lang == 'en':
+        text = 'Select one of the products👇'
+    elif lang == 'ru':
+        text = 'Выберите один из товаров👇'
+    markup = await items_keyboard(category=data[1], lang=await get_lang(callback.from_user.id))
+    c = await get_category_by_id(data[1])
+    if c.category_photo:
+        photo = c.category_photo
+        text = _(f"{text}")
+        await callback.message.answer_photo(photo=photo, caption=text, reply_markup=markup)
+
+
+async def list_aksiya_items(callback: CallbackQuery, category, item_id, **kwargs):
+    await callback.answer()
+    await callback.message.delete()
+    lang = await get_lang(callback.from_user.id)
+    markup = await item_keyboard(category, item_id=item_id, selected=0, lang=await get_lang(callback.from_user.id))
+    item = await get_aksiya_item(item_id)
+    photo = item.photo
+    user = await get_user(callback.from_user.id)
+    if user.lang == "ru":
+        description = item.description_ru
+        item_name = item.name_ru
+        category_name = item.category_name_ru
+    elif lang == 'uz':
+        description = item.description_uz
+        item_name = item.name_uz
+        category_name = item.category_name_uz
+    elif lang == 'en':
+        description = item.descriptio_en
+        item_name = item.name
+        category_name = item.category_name
+    if photo:
+        text = _("""
+<b>{} >> {}</b>
+Price: {} uzs
+Aktsiya {}x = {}x 
+
+{}
+""").format(category_name, item_name, item.price, item.begin_aksiya, item.count_a, description)
+        await callback.message.answer_photo(photo=photo, caption=text, reply_markup=markup)
+
+
+@dp.callback_query_handler(menu_cd.filter(), state='aksiya')
+async def navigate(call: CallbackQuery, callback_data: dict):
+    """
+    :param call: Тип объекта CallbackQuery, который прилетает в хендлер
+    :param callback_data: Словарь с данными, которые хранятся в нажатой кнопке
+    """
+    lang = await get_lang(call.from_user.id)
+    print(lang)
+    current_level = callback_data.get("level")
+    category = callback_data.get("category")
+    item_id = int(callback_data.get("item_id"))
+    levels = {
+        "0": list_aksiya_categories,
+        "1": list_aksiya_subcategories,
+        "2": list_aksiya_items,
+    }
+    current_level_function = levels[current_level]
+    await current_level_function(
+        call,
+        category=category,
+        item_id=item_id
+    )
+
+
+@dp.callback_query_handler(text="back_category", state='aksiya')
+async def back_category_fun(call: types.CallbackQuery):
+    await call.answer()
+    await call.message.delete()
+    lang = await get_lang(call.from_user.id)
+    text = ''
+    if lang == 'uz':
+        text = 'Kategoriyalardan birini tanlang👇'
+    elif lang == 'en':
+        text = 'Select one of the categories👇'
+    elif lang == 'ru':
+        text = 'Выберите одну из категорий👇'
+    markup = await categories_keyboard(lang=await get_lang(call.from_user.id))
+    await call.message.answer(_(f"{text}"), reply_markup=markup)
